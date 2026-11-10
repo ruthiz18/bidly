@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "40801994763",
+    "project_id": "bidly-b3b71",
+    "storage_bucket": "bidly-b3b71.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:40801994763:android:a6723f1ca88e5785065f0e",
+        "android_client_info": {
+          "package_name": "com.example.bidly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB9je3PhY13HsqVS8eIPnQ1yobeXXwFWc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +12,8 @@ import '../widgets/error_view.dart';
 import '../widgets/item_card.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/status_tag.dart';
+import 'auction_ended_panel.dart';
+import 'bid_section.dart';
 
 /// Screen 8: item detail. No bid button yet.
 class ItemDetailScreen extends StatelessWidget {
@@ -44,18 +48,52 @@ class ItemDetailScreen extends StatelessWidget {
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends StatefulWidget {
   const _Body({required this.item});
 
   final Item item;
 
   @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  Timer? _timer;
+  late bool _wasClosed = widget.item.isClosed;
+
+  @override
+  void initState() {
+    super.initState();
+    // Nothing writes when an auction expires; we just notice the clock
+    // passing endTime and redraw. Stops once closed.
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final closed = widget.item.isClosed;
+      if (closed != _wasClosed && mounted) {
+        setState(() => _wasClosed = closed);
+      }
+      if (closed) _timer?.cancel();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+    _wasClosed = item.isClosed;
     final text = Theme.of(context).textTheme;
     final closed = item.isClosed;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       children: [
+        if (closed) ...[
+          AuctionEndedPanel(item: item),
+          const SizedBox(height: 16),
+        ],
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadii.card),
           child: AspectRatio(
@@ -170,6 +208,8 @@ class _Body extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        BidSection(item: item),
         const SizedBox(height: 16),
         Card(
           child: Padding(

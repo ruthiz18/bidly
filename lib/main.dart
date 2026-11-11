@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'repositories/auth_repository.dart';
+import 'repositories/bid_repository.dart';
 import 'repositories/item_repository.dart';
 import 'state/auction_state.dart';
 import 'screens/auth_gate.dart';
@@ -16,7 +17,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthState(AuthRepository())),
-        ChangeNotifierProvider(create: (_) => AuctionState(ItemRepository())),
+        ChangeNotifierProvider(create: (_) => AuctionState(ItemRepository(), BidRepository())),
       ],
       child: const BidlyApp(),
     ),

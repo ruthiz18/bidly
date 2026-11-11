@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/item.dart';
+import '../repositories/bid_repository.dart';
 import '../repositories/item_repository.dart';
 
 enum AuctionFilter { all, endingSoon, buyNow }
@@ -10,11 +11,12 @@ enum AuctionFilter { all, endingSoon, buyNow }
 /// The brain for auctions: holds the live list and the filters.
 /// Screens talk to this, never to Firestore.
 class AuctionState extends ChangeNotifier {
-  AuctionState(this._repo) {
+  AuctionState(this._repo, this._bids) {
     start();
   }
 
   final ItemRepository _repo;
+  final BidRepository _bids;
   StreamSubscription<List<Item>>? _sub;
 
   List<Item> _items = const [];
@@ -83,6 +85,28 @@ class AuctionState extends ChangeNotifier {
       _repo.watchBySeller(sellerId);
 
   Future<String> createItem(Item item) => _repo.create(item);
+
+  /// Throws [BidRejectedException] if the server refuses the bid.
+  Future<void> placeBid({
+    required String itemId,
+    required String bidderId,
+    required String bidderName,
+    required int amount,
+  }) =>
+      _bids.placeBid(
+        itemId: itemId,
+        bidderId: bidderId,
+        bidderName: bidderName,
+        amount: amount,
+      );
+
+  /// Buy Now. Throws [BidRejectedException] if it can no longer be bought.
+  Future<void> buyNow({
+    required String itemId,
+    required String buyerId,
+    required String buyerName,
+  }) =>
+      _bids.buyNow(itemId: itemId, buyerId: buyerId, buyerName: buyerName);
 
   @override
   void dispose() {

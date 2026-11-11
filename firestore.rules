@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /items/{itemId} {
+      allow read: if request.auth != null;
+
+      // New listing: starts with no bids.
+      allow create: if request.auth != null
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.highestBid == request.resource.data.startingPrice
+        && request.resource.data.highestBidderId == null
+        && request.resource.data.bidCount == 0
+        && request.resource.data.boughtNow == false;
+
+      // A bid: only the bid fields may change, the amount must beat the
+      // current highest bid, and the deadline (server clock) must not have
+      // passed. Sellers cannot bid on their own item.
+      allow update: if request.auth != null
+        && request.auth.uid != resource.data.sellerId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['highestBid', 'highestBidderId', 'highestBidderName', 'bidCount'])
+        && request.resource.data.highestBid > resource.data.highestBid
+        && request.resource.data.highestBidderId == request.auth.uid
+        && request.resource.data.bidCount == resource.data.bidCount + 1
+        && request.time < resource.data.endTime
+        && resource.data.boughtNow == false;
+
+      // Buy Now: ends the auction early at exactly the buy-now price, only
+      // while it is still open and the current bid is below that price.
+      // closedEarlyAt must be the server's own clock.
+      allow update: if request.auth != null
+        && request.auth.uid != resource.data.sellerId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['highestBid', 'highestBidderId', 'highestBidderName',
+                       'bidCount', 'boughtNow', 'closedEarlyAt'])
+        && resource.data.boughtNow == false
+        && request.time < resource.data.endTime
+        && resource.data.buyNowPrice != null
+        && resource.data.highestBid < resource.data.buyNowPrice
+        && request.resource.data.boughtNow == true
+        && request.resource.data.highestBid == resource.data.buyNowPrice
+        && request.resource.data.highestBidderId == request.auth.uid
+        && request.resource.data.bidCount == resource.data.bidCount + 1
+        && request.resource.data.closedEarlyAt == request.time;
+
+      match /bids/{bidId} {
+        allow read: if request.auth != null;
+
+        // Bids are append-only, made as yourself, and must match the item's
+        // new highestBid written in the same transaction.
+        allow create: if request.auth != null
+          && request.resource.data.bidderId == request.auth.uid
+          && request.resource.data.amount is int
+          && request.resource.data.amount > get(/databases/$(database)/documents/items/$(itemId)).data.highestBid
+          && request.resource.data.amount == getAfter(/databases/$(database)/documents/items/$(itemId)).data.highestBid
+          && get(/databases/$(database)/documents/items/$(itemId)).data.boughtNow == false
+          && request.time < get(/databases/$(database)/documents/items/$(itemId)).data.endTime;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

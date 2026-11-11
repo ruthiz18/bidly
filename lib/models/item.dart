@@ -20,6 +20,7 @@ class Item {
     this.buyNowPrice,
     this.boughtNow = false,
     this.createdAt,
+    this.closedEarlyAt,
   });
 
   /// Smallest step a new bid must add to the current highest bid (RWF).
@@ -41,13 +42,19 @@ class Item {
   final DateTime endTime;
   final DateTime? createdAt;
 
+  /// Set by the server when Buy Now ended the auction early.
+  final DateTime? closedEarlyAt;
+
   // ---- computed, never stored ----
 
   /// Closed by the clock or by a buy-now. (The server enforces the real
   /// deadline with request.time; this is only for drawing the UI.)
   bool get isClosed => boughtNow || !endTime.isAfter(DateTime.now());
-  bool get isSold => isClosed && (boughtNow || bidCount > 0);
-  bool get isUnsold => isClosed && !isSold;
+  bool get isSold => isClosed && highestBidderId != null;
+  bool get isUnsold => isClosed && highestBidderId == null;
+
+  /// True when [uid] holds the winning bid of a closed auction.
+  bool isWonBy(String? uid) => isSold && uid != null && highestBidderId == uid;
   bool get hasBuyNow => buyNowPrice != null && !isClosed;
 
   Duration get timeLeft {
@@ -81,6 +88,7 @@ class Item {
       // A pending serverTimestamp is null for a moment on local writes.
       endTime: (d['endTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
+      closedEarlyAt: (d['closedEarlyAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -100,6 +108,7 @@ class Item {
         'bidCount': 0,
         'buyNowPrice': buyNowPrice,
         'boughtNow': false,
+        'closedEarlyAt': null,
         'endTime': Timestamp.fromDate(endTime),
         'createdAt': FieldValue.serverTimestamp(),
       };

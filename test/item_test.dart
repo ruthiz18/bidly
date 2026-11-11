@@ -2,6 +2,7 @@ import 'package:bidly/models/item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Item make({DateTime? end, int bids = 0, bool bought = false, int high = 5000}) => Item(
+      highestBidderId: bids > 0 ? 'u1' : null,
       id: 'x',
       sellerId: 's',
       sellerName: 'S',
@@ -30,8 +31,10 @@ void main() {
     expect(make(end: past).timeLeft, Duration.zero);
   });
   test('bought now is closed and sold', () {
-    final i = make(bought: true);
+    final i = make(bought: true, bids: 1);
     expect(i.isClosed, true);
     expect(i.isSold, true);
+    expect(i.isWonBy('u1'), true);
+    expect(i.isWonBy('u2'), false);
   });
 }

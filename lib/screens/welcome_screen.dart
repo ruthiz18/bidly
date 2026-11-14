@@ -71,30 +71,7 @@ class WelcomeScreen extends StatelessWidget {
                   style: text.bodyMedium,
                 ),
                 const SizedBox(height: 24),
-                const _FeatureCard(
-                  icon: Icons.bolt,
-                  title: 'Live Bids',
-                  badge: 'INSTANT',
-                  body:
-                      'Instant real-time bidding, transparent counters, and instant outbid alerts.',
-                ),
-                const SizedBox(height: 12),
-                const _FeatureCard(
-                  icon: Icons.shield,
-                  title: 'Buyer & Seller Protection',
-                  badge: 'ZERO FEES',
-                  body:
-                      'Secure escrow protection and verified payments on every lot.',
-                ),
-                const SizedBox(height: 12),
-                const _FeatureCard(
-                  icon: Icons.verified_user,
-                  title: 'Verified Member Network',
-                  badge: '100% VERIFIED',
-                  dark: true,
-                  body:
-                      'Identity-verified buyers & sellers with trusted community ratings.',
-                ),
+                const _FeatureCarousel(),
                 const SizedBox(height: 28),
                 PrimaryButton(
                   label: 'Get Started',
@@ -115,6 +92,87 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Swipeable onboarding: three short slides with page dots.
+class _FeatureCarousel extends StatefulWidget {
+  const _FeatureCarousel();
+
+  @override
+  State<_FeatureCarousel> createState() => _FeatureCarouselState();
+}
+
+class _FeatureCarouselState extends State<_FeatureCarousel> {
+  static const _slides = [
+    _FeatureCard(
+      icon: Icons.bolt,
+      title: 'Live Bids',
+      badge: 'INSTANT',
+      body:
+          'Instant real-time bidding, transparent counters, and instant outbid alerts.',
+    ),
+    _FeatureCard(
+      icon: Icons.shield,
+      title: 'Buyer & Seller Protection',
+      badge: 'ZERO FEES',
+      body: 'Secure escrow protection and verified payments on every lot.',
+    ),
+    _FeatureCard(
+      icon: Icons.verified_user,
+      title: 'Verified Member Network',
+      badge: '100% VERIFIED',
+      dark: true,
+      body: 'Identity-verified buyers & sellers with trusted community ratings.',
+    ),
+  ];
+
+  final _controller = PageController(viewportFraction: 0.94);
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 150,
+          child: PageView(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _page = i),
+            children: [
+              for (final s in _slides)
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4), child: s),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < _slides.length; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                height: 8,
+                width: i == _page ? 24 : 8,
+                decoration: BoxDecoration(
+                  color: i == _page
+                      ? AppColors.primary
+                      : AppColors.tertiary.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

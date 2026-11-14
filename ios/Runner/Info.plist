@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Bidly needs your photo library so you can add a picture to your listing.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Bidly needs the camera so you can photograph the item you are selling.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

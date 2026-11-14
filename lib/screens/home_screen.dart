@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/item.dart';
 import '../state/auction_state.dart';
 import '../state/auth_state.dart';
+import '../state/my_bids_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/error_view.dart';
@@ -12,6 +13,8 @@ import '../widgets/loading_view.dart';
 import '../widgets/status_tag.dart';
 import 'item_detail_screen.dart';
 import 'list_item_screen.dart';
+import 'notifications_screen.dart';
+import 'search_screen.dart';
 
 /// Screen 6: live auctions. Four states: loading, error, empty, data.
 class HomeScreen extends StatelessWidget {
@@ -21,6 +24,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<AuctionState>();
     final text = Theme.of(context).textTheme;
+    final outbidCount =
+        context.select<MyBidsState, int>((s) => s.outbid.length);
 
     Widget body;
     if (state.loading) {
@@ -33,9 +38,11 @@ class HomeScreen extends StatelessWidget {
         message: 'No live auctions yet.\nTap + Sell to list the first item.',
       );
     } else if (state.filtered.isEmpty) {
-      body = const EmptyView(
+      body = EmptyView(
         icon: Icons.search_off,
-        message: 'No auctions match your search.',
+        message: state.hasActiveFilters
+            ? 'No auctions match your search or filters.'
+            : 'Nothing is ending soon.',
       );
     } else {
       final items = state.filtered;
@@ -63,6 +70,17 @@ class HomeScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            tooltip: 'Notifications',
+            icon: Badge(
+              isLabelVisible: outbidCount > 0,
+              label: Text('$outbidCount'),
+              child: const Icon(Icons.notifications_none),
+            ),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+          ),
+          IconButton(
             tooltip: 'Log out',
             icon: const Icon(Icons.logout),
             onPressed: context.read<AuthState>().logOut,
@@ -89,11 +107,36 @@ class HomeScreen extends StatelessWidget {
                 Text('Curated Collectibles\n& Electronics',
                     style: text.headlineMedium),
                 const SizedBox(height: 12),
-                TextField(
-                  onChanged: state.setQuery,
-                  decoration: const InputDecoration(
-                    hintText: 'Search treasures, books, gadgets',
-                    prefixIcon: Icon(Icons.search),
+                // Tapping opens screen 7 (search + filters).
+                InkWell(
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SearchScreen()),
+                  ),
+                  child: Container(
+                    height: 56,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    decoration: BoxDecoration(
+                      color: AppColors.field,
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.search, color: AppColors.tertiary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          state.query.isEmpty
+                              ? 'Search treasures, books, gadgets'
+                              : state.query,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: state.query.isEmpty
+                                  ? AppColors.tertiary
+                                  : AppColors.text),
+                        ),
+                      ),
+                      const Icon(Icons.tune, color: AppColors.tertiary),
+                    ]),
                   ),
                 ),
                 const SizedBox(height: 12),

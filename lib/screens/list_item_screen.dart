@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/item.dart';
 import '../state/auction_state.dart';
 import '../state/auth_state.dart';
+import '../widgets/photo_field.dart';
+import 'listing_success_screen.dart';
 import '../widgets/primary_button.dart';
 
 /// Screen 14: list an item for auction.
@@ -20,7 +22,8 @@ class _ListItemScreenState extends State<ListItemScreen> {
   final _description = TextEditingController();
   final _startPrice = TextEditingController();
   final _buyNow = TextEditingController();
-  final _photoUrl = TextEditingController();
+  String? _photoUrl; // Cloudinary URL once the upload has finished
+  bool _uploading = false;
 
   DateTime? _endDate;
   TimeOfDay? _endTimeOfDay;
@@ -33,7 +36,6 @@ class _ListItemScreenState extends State<ListItemScreen> {
     _description.dispose();
     _startPrice.dispose();
     _buyNow.dispose();
-    _photoUrl.dispose();
     super.dispose();
   }
 
@@ -83,13 +85,16 @@ class _ListItemScreenState extends State<ListItemScreen> {
 
     setState(() => _saving = true);
     try {
-      await auction.createItem(Item(
+      final startingPrice = int.parse(_startPrice.text.trim());
+      final title = _title.text.trim();
+      final photo = _photoUrl;
+      final id = await auction.createItem(Item(
         id: '',
         sellerId: uid,
         sellerName: auth.user?.name ?? 'Seller',
         title: _title.text.trim(),
         description: _description.text.trim(),
-        imageUrl: _photoUrl.text.trim().isEmpty ? null : _photoUrl.text.trim(),
+        imageUrl: _photoUrl,
         startingPrice: int.parse(_startPrice.text.trim()),
         highestBid: int.parse(_startPrice.text.trim()),
         buyNowPrice:
@@ -97,9 +102,16 @@ class _ListItemScreenState extends State<ListItemScreen> {
         endTime: end!,
       ));
       if (!mounted) return;
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Your item is live on Bidly!')));
+      // Screen 15 replaces the form, so Back never returns to a filled form.
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => ListingSuccessScreen(
+          itemId: id,
+          title: title,
+          startingPrice: startingPrice,
+          endTime: end,
+          imageUrl: photo,
+        ),
+      ));
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -165,23 +177,11 @@ class _ListItemScreenState extends State<ListItemScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                _label('Photo URL'),
-                TextFormField(
-                  controller: _photoUrl,
-                  keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    hintText: 'https://... (optional for now)',
-                    prefixIcon: Icon(Icons.image_outlined),
-                  ),
-                  validator: (v) {
-                    final s = v?.trim() ?? '';
-                    if (s.isEmpty) return null;
-                    final uri = Uri.tryParse(s);
-                    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-                      return 'Enter a full link starting with https://';
-                    }
-                    return null;
-                  },
+                _label('Photo'),
+                PhotoField(
+                  initialUrl: null,
+                  onChanged: (url) => _photoUrl = url,
+                  onBusyChanged: (b) => setState(() => _uploading = b),
                 ),
                 const SizedBox(height: 18),
                 _label('Starting Bid (RWF)'),
@@ -256,7 +256,7 @@ class _ListItemScreenState extends State<ListItemScreen> {
                   label: 'Publish Live Auction',
                   icon: Icons.rocket_launch_outlined,
                   loading: _saving,
-                  onPressed: _submit,
+                  onPressed: _uploading ? null : _submit,
                 ),
               ],
             ),

@@ -49,6 +49,29 @@ service cloud.firestore {
         && request.resource.data.bidCount == resource.data.bidCount + 1
         && request.resource.data.closedEarlyAt == request.time;
 
+      // Seller edit. Text fields any time while the auction is open; price,
+      // buy-now and end time only before the first bid, so a seller cannot
+      // move the finish line after people have committed money.
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.sellerId
+        && resource.data.boughtNow == false
+        && request.time < resource.data.endTime
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['title', 'description', 'imageUrl',
+                       'startingPrice', 'highestBid', 'buyNowPrice', 'endTime'])
+        && (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['title', 'description', 'imageUrl'])
+          || (
+            resource.data.bidCount == 0
+            && request.resource.data.highestBid == request.resource.data.startingPrice
+            && request.resource.data.startingPrice > 0
+            && request.resource.data.endTime > request.time
+            && (request.resource.data.buyNowPrice == null
+                || request.resource.data.buyNowPrice > request.resource.data.startingPrice)
+          )
+        );
+
       match /bids/{bidId} {
         allow read: if request.auth != null;
 
@@ -63,6 +86,12 @@ service cloud.firestore {
           && request.time < get(/databases/$(database)/documents/items/$(itemId)).data.endTime;
         allow update, delete: if false;
       }
+    }
+
+    // Collection-group reads (My Bids: every bid a user ever placed).
+    // The nested rule above does not cover collectionGroup('bids').
+    match /{path=**}/bids/{bidId} {
+      allow read: if request.auth != null;
     }
   }
 }

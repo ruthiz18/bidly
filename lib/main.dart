@@ -6,6 +6,7 @@ import 'repositories/auth_repository.dart';
 import 'repositories/bid_repository.dart';
 import 'repositories/item_repository.dart';
 import 'state/auction_state.dart';
+import 'state/my_bids_state.dart';
 import 'screens/auth_gate.dart';
 import 'state/auth_state.dart';
 import 'theme/app_theme.dart';
@@ -18,6 +19,12 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthState(AuthRepository())),
         ChangeNotifierProvider(create: (_) => AuctionState(ItemRepository(), BidRepository())),
+        // Follows the signed-in user: listens to their bids and the items
+        // they bid on, from login until logout.
+        ChangeNotifierProxyProvider<AuthState, MyBidsState>(
+          create: (_) => MyBidsState(BidRepository(), ItemRepository()),
+          update: (_, auth, state) => state!..setUser(auth.uid),
+        ),
       ],
       child: const BidlyApp(),
     ),

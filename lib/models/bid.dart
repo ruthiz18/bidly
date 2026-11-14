@@ -9,9 +9,14 @@ class Bid {
     required this.bidderName,
     required this.amount,
     this.createdAt,
+    this.itemId = '',
   });
 
   final String id;
+
+  /// The parent item. Read from the document path, so collection-group
+  /// queries (My Bids) know which item each bid belongs to.
+  final String itemId;
   final String bidderId;
   final String bidderName;
   final int amount;
@@ -25,6 +30,7 @@ class Bid {
       bidderName: d['bidderName'] as String? ?? 'Bidder',
       amount: (d['amount'] as num?)?.toInt() ?? 0,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
+      itemId: doc.reference.parent.parent?.id ?? '',
     );
   }
 

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../state/auth_state.dart';
 import '../widgets/loading_view.dart';
-import 'home_screen.dart';
+import 'main_shell.dart';
 import 'welcome_screen.dart';
 
 /// Signed out -> log in. Signed in -> home. Driven by authStateChanges
@@ -15,6 +15,6 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthState>();
     if (!auth.initialised) return const Scaffold(body: LoadingView());
-    return auth.isSignedIn ? const HomeScreen() : const WelcomeScreen();
+    return auth.isSignedIn ? const MainShell() : const WelcomeScreen();
   }
 }

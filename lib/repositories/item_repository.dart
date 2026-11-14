@@ -33,6 +33,11 @@ class ItemRepository {
         return items;
       });
 
+  /// Seller edit. Only the keys in [fields] are written. The rules refuse
+  /// price / end-time changes once bidCount > 0.
+  Future<void> update(String id, Map<String, dynamic> fields) =>
+      _col.doc(id).update(fields);
+
   /// Returns the new item's id.
   Future<String> create(Item item) async {
     final ref = await _col.add(item.toCreateMap());

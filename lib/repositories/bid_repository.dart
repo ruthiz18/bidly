@@ -180,6 +180,27 @@ class BidRepository {
     }
   }
 
+  /// Every bid [uid] has ever placed, across all items, newest first.
+  ///
+  /// A collection-group query. The first run throws a failed-precondition
+  /// error containing a link that creates the required index; open it,
+  /// click Create, and wait a minute.
+  Stream<List<Bid>> watchMyBids(String uid) => _db
+      .collectionGroup('bids')
+      .where('bidderId', isEqualTo: uid)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((s) => s.docs.map(Bid.fromDoc).toList());
+
+  /// Full bid history for an item, newest first (sale detail screen).
+  Stream<List<Bid>> watchBidsNewestFirst(String itemId) => _db
+      .collection('items')
+      .doc(itemId)
+      .collection('bids')
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((s) => s.docs.map(Bid.fromDoc).toList());
+
   /// Bid history for an item, highest first.
   Stream<List<Bid>> watchBids(String itemId) => _db
       .collection('items')
